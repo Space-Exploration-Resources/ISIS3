@@ -52,10 +52,8 @@ TEST_F(DefaultCube, FunctionalTestSpkwriterDefault) {
 
   newKernelCube.reopen("rw");
 
-  Camera *newCamera = nullptr;
-
   try {
-    newCamera = newKernelCube.camera();
+    newKernelCube.camera();
   } catch(IException &e) {
     FAIL() << "Unable to generate camera with new spk kernel: " << e.toString().toStdString().c_str() << std::endl;
   }
@@ -111,10 +109,8 @@ TEST_F(DefaultCube, FunctionalTestSpkwriterFromlist) {
 
   newKernelCube.reopen("rw");
 
-  Camera *newCamera = nullptr;
-
   try {
-    newCamera = newKernelCube.camera();
+    newKernelCube.camera();
   } catch(IException &e) {
     FAIL() << "Unable to generate camera with new spk kernel: " << e.toString().toStdString().c_str() << std::endl;
   }
@@ -135,7 +131,8 @@ TEST_F(DefaultCube, FunctionalTestSpkwriterFromlist) {
 TEST_F(ObservationPair, FunctionalTestSpkwriterCantValidate) {
   Pvl appLog;
   QVector<QString> args = {"fromlist=" + cubeListFile,
-                           "to=" + tempDir.path() + "/newKernel.bsp"};
+                           "to=" + tempDir.path() + "/newKernel.bsp",
+                           "type=9"};
 
   UserInterface options(APP_XML, args);
   try {
@@ -151,6 +148,7 @@ TEST_F(ObservationPair, FunctionalTestSpkwriterWarnValidate) {
   Pvl appLog;
   QVector<QString> args = {"fromlist=" + cubeListFile,
                            "to=" + tempDir.path() + "/newKernel.bsp",
+                           "type=9",
                            "overlap=warn"};
 
   UserInterface options(APP_XML, args);

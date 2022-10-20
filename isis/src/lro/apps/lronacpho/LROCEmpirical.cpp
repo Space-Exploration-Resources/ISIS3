@@ -347,7 +347,7 @@ namespace Isis {
    *   @history 2021-03-12 Victor Silva - Added b parameters for 2019 version of
    *                                      LROC Empirical algorithm
    *
-   *   @history 2022-04-26 Victor Silva - Changed strings casted using toString to
+   *   @history 2022-04-26 Victor Silva - Changed strings casted using toString to 
    *                                      string literal "0.0"
    *
    */

@@ -14,6 +14,7 @@ using namespace std;
 using namespace Isis;
 using namespace testing;
 
+
 /**
   *
   * @brief Calibration application for the LRO NAC cameras
@@ -25,6 +26,7 @@ using namespace testing;
   *
   * @internal
   *   @history 2022-04-26 Victor Silva - Original Version - Functional test is against known value for input
+
   *                                      cub since fx is not yet callable
   */
 
@@ -39,10 +41,12 @@ TEST(LronaccalDefault, FunctionalTestsLronaccal) {
     geometrically transformed (i.e. scaled, rotated, sheared, or
     reflected) or cropped
   */
+
   QString iCubeFile =  "$ISISTESTDATA/isis/src/lro/apps/lronaccal/M1333276014R.cub";
   QString oCubeFile = outputDir.path() + "/out.default.cub";
   QString oCubeCropFile = outputDir.path() + "/out.default.crop.cub";
   QString tCubeFile = "data/lronaccal/truth/M1333276014R.default.crop.cub";
+
 
   QVector<QString> args = {"from="+iCubeFile, "to="+oCubeFile };
 
@@ -87,6 +91,7 @@ TEST(LronaccalNear, FunctionalTestsLronaccal) {
     geometrically transformed (i.e. scaled, rotated, sheared, or
     reflected) or cropped
   */
+
   QString iCubeFile =  "$ISISTESTDATA/isis/src/lro/apps/lronaccal/M1333276014R.cub";
   QString oCubeFile = outputDir.path() + "/out.near.cub";
   QString oCubeCropFile = outputDir.path() + "/out.near.crop.cub";
@@ -101,6 +106,7 @@ TEST(LronaccalNear, FunctionalTestsLronaccal) {
   catch (IException &e) {
     FAIL() << "Unable to calibrate the LRO image: " <<e.toString().toStdString().c_str() << std::endl;
   }
+
   try{
     static QString CROP_XML = FileName("$ISISROOT/bin/xml/crop.xml").expanded();
     QVector<QString> argsCrop = {"from=" + oCubeFile, "to=" + oCubeCropFile, "sample=80", "nsamples=80", "line=80", "nlines=80"};

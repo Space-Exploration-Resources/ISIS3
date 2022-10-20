@@ -232,22 +232,47 @@ namespace Isis {
     }
   };
 
+  // Writes binary kernels to the data area. Unsure of the best way to handle
+  // clean up. Didn't want to dive into the rabbit hole of C++ alternatives
+  // to python yeild statements
+  QVector<QString> generateBinaryKernels(QVector<QString> kernelList) {
+    QVector<QString> binaryKernelList;
 
-  // Matches a CSM Image Coord for gMock
-  ::testing::Matcher<const csm::ImageCoord&> MatchImageCoord(const csm::ImageCoord &expected) {
-    return ::testing::AllOf(
-        ::testing::Field(&csm::ImageCoord::line, ::testing::DoubleNear(expected.line, 0.0001)),
-        ::testing::Field(&csm::ImageCoord::samp, ::testing::DoubleNear(expected.samp, 0.0001))
-    );
-}
+    for (QString kernel : kernelList) {
+      FileName file(kernel);
+      QString pathToBinaryKernel = file.path() + "/" + file.baseName() + "." + file.extension().replace('x', 'b');
+      FileName binaryFile(pathToBinaryKernel);
 
+      if (file.extension().contains("x") && !binaryFile.fileExists()) {
+        QString path = file.expanded();
+        QString command = "tobin " + path;
+        command += " >nul 2>nul";
+        int status = system(command.toLatin1().data());
 
-  // Matches a CSM ECEF Coord for gMock
-  ::testing::Matcher<const csm::EcefCoord&> MatchEcefCoord(const csm::EcefCoord &expected) {
-    return ::testing::AllOf(
-        ::testing::Field(&csm::EcefCoord::x, ::testing::DoubleNear(expected.x, 0.0001)),
-        ::testing::Field(&csm::EcefCoord::y, ::testing::DoubleNear(expected.y, 0.0001)),
-        ::testing::Field(&csm::EcefCoord::z, ::testing::DoubleNear(expected.z, 0.0001))
-    );
+        if (status != 0) {
+          QString msg = "Executing command [" + command +
+                        "] failed with return status [" + toString(status) + "]";
+          throw IException(IException::Programmer, msg, _FILEINFO_);
+        }
+      }
+      binaryKernelList.append(pathToBinaryKernel);
+    }
+    return binaryKernelList;
   }
+
+  QString fileListToString(QVector<QString> fileList) {
+    QString filesAsString("(");
+
+    for (int i = 0; i < fileList.size(); i++) {
+      FileName file(fileList[i]);
+
+      filesAsString += file.expanded();
+      if (i != fileList.size() - 1) {
+        filesAsString += ", ";
+      }
+    }
+    filesAsString += ")";
+    return filesAsString;
+  }
+
 }

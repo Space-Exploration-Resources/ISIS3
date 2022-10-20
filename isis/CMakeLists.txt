@@ -13,12 +13,13 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_FRAMEWORK_PATH /System/Library/Frameworks/)
 set(CMAKE_FIND_FRAMEWORK LAST)
 
+# Enable use of @rpath on Mac
+set(CMAKE_MACOS_RPATH 1)
+
 include(AddIsisModule)
 include(Utilities)
 include(TestSetup)
 include(InstallThirdParty)
-include(cmake/gtest.cmake)
-include(GoogleTest)
 
 include(CMakePrintHelpers)
 
@@ -33,7 +34,7 @@ set(PACKAGE            "ISIS")
 set(PACKAGE_NAME       "USGS ISIS")
 
 # Version number
-set(VERSION            "7.0.0")
+set(VERSION            "7.1.0")
 string(REPLACE "." ";" VERSION_LIST ${VERSION})
 list(GET VERSION_LIST 0 VERSION_MAJOR)
 list(GET VERSION_LIST 1 VERSION_MINOR)
@@ -45,7 +46,7 @@ set(PACKAGE_STRING     "${PACKAGE_NAME} ${VERSION}")
 
 # Other release information
 string(TIMESTAMP VERSION_DATE "%Y-%m-%d" UTC)
-set(RELEASE_STAGE             "alpha") # (alpha, beta, stable)
+set(RELEASE_STAGE             "stable") # (alpha, beta, stable)
 
 # Define to the address where bug reports for this package should be sent.
 set(PACKAGE_BUGREPORT  "https://github.com/USGS-Astrogeology/ISIS3/issues")
@@ -136,10 +137,6 @@ message("\tINSTALL PREFIX: ${CMAKE_INSTALL_PREFIX}")
 #===============================================================================
 #===============================================================================
 
-# Set up the ctest tool which is used to run all of the tests.
-enable_testing()
-include(CTest)
-
 # Set up Anaconda prefix in the case with a non-default conda env is activated
 if(EXISTS $ENV{CONDA_PREFIX})
   message("CONDA PREFIX: $ENV{CONDA_PREFIX}")
@@ -153,9 +150,11 @@ if(JP2KFLAG)
  set(JP2KFLAG 1)
 endif()
 
-# Set up the ctest tool which is used to run all of the tests.
-enable_testing()
-include(CTest)
+if(buildTests)
+  include(CTest)
+  enable_testing()
+endif()
+
 
 # Specify flags used
 # on linux, add the conda prefix to handle possible issues with rpaths at link time
@@ -295,7 +294,15 @@ find_package(Armadillo         REQUIRED)
 find_package(Threads)
 find_package(inja              REQUIRED)
 
+# Setup for googletest/googlemock before adding SensorUtilities so we build its tests
+if(buildTests)
+  set(INSTALL_GTEST OFF)
+  add_subdirectory(../gtest gtest)
+else()
+  set(SENSOR_UTILITIES_BUILD_TESTS OFF CACHE BOOL "Disable SensorUtilities Tests")
+endif()
 
+add_subdirectory(../SensorUtilities SensorUtilities)
 
 # In this case, we specify the version numbers being searched for in the non-traditional installs.
 if(APPLE)
@@ -349,7 +356,7 @@ foreach (_variableName ${_variableNames})
 endforeach()
 
 # add target based linkages to ALLLIBS variable
-list(APPEND ALLLIBS pantor::inja)
+list(APPEND ALLLIBS pantor::inja sensorutilities)
 
 # Sometimes we add the same lib more than once (especially with LIBDIRS)
 list(REMOVE_DUPLICATES ALLLIBDIRS)
@@ -602,15 +609,15 @@ install(FILES     ${CMAKE_SOURCE_DIR}/../CHANGELOG.md DESTINATION  ${CMAKE_INSTA
 install(FILES     ${CMAKE_BINARY_DIR}/version         DESTINATION  ${CMAKE_INSTALL_PREFIX})
 install(DIRECTORY ${CMAKE_SOURCE_DIR}/scripts         DESTINATION  ${CMAKE_INSTALL_PREFIX})
 install(PROGRAMS ${CMAKE_BINARY_DIR}/lib/Camera.plugin DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/)
+install(PROGRAMS ${CMAKE_SOURCE_DIR}/scripts/downloadIsisData DESTINATION ${CMAKE_INSTALL_PREFIX}/bin/)
+install(FILES ${CMAKE_SOURCE_DIR}/config/rclone.conf DESTINATION ${CMAKE_INSTALL_PREFIX}/etc/isis/)
 
 # Trigger all post-install behavior.
 # - The only way to run commands post-install in CMake is to add a subdirectory at
 #   the end of this file containing a CMakeLists.txt file which includes all of
 #   the desired post-install commands inside.
 add_subdirectory(cmake)
-option (BUILD_TESTS "Build tests" ON)
-if(BUILD_TESTS)
-  include(CTest)
-  enable_testing()
+
+if(buildTests)
   add_subdirectory(tests)
 endif()

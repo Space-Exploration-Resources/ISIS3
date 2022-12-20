@@ -88,6 +88,10 @@ Group = InstrumentName
   Translation   = (Tc, TC1)
   Translation   = (Tc, TC2)
 
+  # KPLO 
+  #Translation   = (ShadowCamCamera, KPLO_SHADOWCAM)
+  Translation   = (ShadowCamCamera, KPLO_SHC)
+
   # LO
   Translation   = (Hrc, "High Resolution Camera")
   Translation   = (Mrc, "Medium Resolution Camera")

@@ -76,6 +76,9 @@
 {%- else if SpacecraftName == "LUNAR RECONNAISSANCE ORBITER" -%}
   {%- set SpacecraftId="LRO" -%}
   {%- set InstrumentId="CNac" -%}
+{%- else if SpacecraftName == "KOREA PATHFINDER LUNAR ORBITER" -%}
+  {%- set SpacecraftId="KPLO" -%}
+  {%- set InstrumentId="KPLO_SHC" -%}
 {%- else if SpacecraftName == "MARS EXPLORATION ROVER" -%}
   {%- set SpacecraftId="Mer" -%}
 {%- else if SpacecraftName == "LUNAR_ORBITER_3" or  SpacecraftName == "LUNAR_ORBITER_4" or  SpacecraftName == "LUNAR_ORBITER_5" -%}

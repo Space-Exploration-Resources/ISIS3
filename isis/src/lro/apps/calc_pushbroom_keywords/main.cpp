@@ -144,6 +144,7 @@ void IsisMain() {
   bool    isLroNACL = false;
   bool    isLroNACR = false;
   bool    isShadowCam = false;
+  bool    isLUTI = false;
 
 
   int		csum;
@@ -289,6 +290,7 @@ void IsisMain() {
    else if (strstr(instrumentId.c_str(),"NACL") != NULL ) isLroNACL = true;
    else if (strstr(instrumentId.c_str(),"NACR") != NULL ) isLroNACR = true;
    else if (strstr(instrumentId.c_str(), "ShadowCam") != NULL) isShadowCam = true;
+   else if (strstr(instrumentId.c_str(), "LUTI") != NULL) isLUTI = true;  // FIXME: Might need to do LUTIA vs LUTIB
    else {
      msg = "Unsupported instrument: " + instrumentId;
      throw IException(IException::User,msg,_FILEINFO_);
@@ -422,25 +424,29 @@ void IsisMain() {
 //    - MRO-CTX and LRO-NAC, use negative of coeficients used in ISIS
 ///////////////////////////////////////////////////////////////////////////////
 
- for (i=0; i<=9; i++) 
-   lensco[i] = 0.0;
+  for (i=0; i<=9; i++) 
+    lensco[i] = 0.0;
 
- //MRO-CTX, values gotten from mroctxAddendum003.ti and negated
- if (isCTX) {
-   lensco[0] = 0.00686116;    //r
-   lensco[2] = -0.0000282406; //r**3
- }
+  //MRO-CTX, values gotten from mroctxAddendum003.ti and negated
+  if (isCTX) {
+    lensco[0] = 0.00686116;    //r
+    lensco[2] = -0.0000282406; //r**3
+  }
 
- // LRO NAC, prior to 8/22/2010: values gotten from lro_instruments_v10.ti and negated
- //          as of 8/22/2010: values gotten from lro_lroc_v14.ti as is.
- if (isLroNACL) lensco[2] = 1.81e-5; //r**3
- if (isLroNACR) lensco[2] = 1.83e-5; //r**3
+  // LRO NAC, prior to 8/22/2010: values gotten from lro_instruments_v10.ti and negated
+  //          as of 8/22/2010: values gotten from lro_lroc_v14.ti as is.
+  if (isLroNACL) lensco[2] = 1.81e-5; //r**3
+  if (isLroNACR) lensco[2] = 1.83e-5; //r**3
 
- // Shadowcam, values gotten from the INS-155151_OD_K keyword in kplo_shadowcam_v00.ti and negated as of 1/26/2023 
- if (isShadowCam) {
-   lensco[2] = 1.741e-5;
- }
+  // Shadowcam, values gotten from the INS-155151_OD_K keyword in kplo_shadowcam_v00.ti and negated as of 1/26/2023 
+  if (isShadowCam) {
+    lensco[2] = 1.741e-5;
+  }
 
+  // LUTI, values gotten from kplo_luti_v08.ti and negated as of 10/5/2023
+  if (isLUTI) {
+    lensco[2] = 5.46e-5;
+  }
 // We no longer need WA lens distortion coefficents
 // since we have noproj'ed images for MOC WA...code
 // has been commented out for reference...
@@ -600,6 +606,30 @@ void IsisMain() {
         throw IException(IException::Programmer,msg,_FILEINFO_);
      }
   }
+  else if (isLUTI) {
+    expected_samples = 2048;
+    // INS-155101_BORESIGHT_SAMPLE (currently same as LUTIB's INS-155102_BORESIGHT_SAMPLE)
+    expected_boresight = 1024;
+
+    if(cube.sampleCount() ==  expected_samples && boresightSample ==  expected_boresight)
+      total_samps = 2048;       // images not padded
+    else {
+      stringstream sstr_expected_boresight, sstr_expected_samples;
+      stringstream sstr_boresightSample, sstr_samples;
+
+      sstr_expected_boresight << expected_boresight;
+      sstr_expected_samples << expected_samples;
+      sstr_boresightSample << boresightSample;
+      sstr_samples << cube.sampleCount();
+
+      msg = "LUTI has changed definition!";
+      if (boresightSample != expected_boresight)
+        msg += "\nBoresight Sample: Expected = " + sstr_expected_boresight.str() + ", Current Value = " + sstr_boresightSample.str();
+      if (cube.sampleCount() != expected_samples)
+        msg += "\nImage Number of Samples: Expected = " + sstr_expected_samples.str() + ", Current Value = " + sstr_samples.str();
+      throw IException(IException::Programmer,msg,_FILEINFO_);
+    }
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Get the Interval Time in seconds
@@ -752,7 +782,7 @@ void IsisMain() {
 // padding of 15 ephemeris points on either side of the image.
 ///////////////////////////////////////////////////////////////////////////////
 
-  if (isMocNA || isHiRise || isCTX || isLroNACL || isLroNACR || isShadowCam) /* Try increment of 1/4 second for NA */
+  if (isMocNA || isHiRise || isCTX || isLroNACL || isLroNACR || isShadowCam || isLUTI) /* Try increment of 1/4 second for NA */
     dt_ephem = 0.25;  /* Make this a user definable increment? */
   else /* Increase increment for WA images to one second */
     dt_ephem = 1.0;
@@ -867,13 +897,26 @@ void IsisMain() {
 
   else if (isShadowCam)
      pxform_c("KPLO_SPACECRAFT","KPLO_SHC_A",et_center,CP);
+  
+  else if (isLUTI) {
+    PvlGroup archive = cube.label()->findGroup("Archive", Pvl::Traverse);
+    bool isLUTIA = archive["ProductId"][0].toStdString().find("LUTIA") != std::string::npos;
+    
+    if (isLUTIA) {
+      pxform_c("KPLO_SPACECRAFT", "KPLO_LUTIA", et_center, CP);
+    }
+    else {
+      pxform_c("KPLO_SPACECRAFT", "KPLO_LUTIB", et_center, CP);
+    }
+  }
+    
 
 ///////////////////////////////////////////////////////////////////////////////
 // Calculate the center Ephermeris time for the C-kernal and get the
 // J2000->platform and J2000->bodyfixed rotation matrices
 ///////////////////////////////////////////////////////////////////////////////
 
-  if(isCTX || isLroNACL || isLroNACR || isShadowCam)
+  if(isCTX || isLroNACL || isLroNACR || isShadowCam || isLUTI)
      ck_time_bias = 0.0;
   else {
      QString ckTimeBiasKey = "INS" + QString(ikCode) + "_CK_TIME_BIAS";
@@ -900,11 +943,13 @@ void IsisMain() {
 // PVL file accordingly.
 ///////////////////////////////////////////////////////////////////////////////
 
-  if (isLroNACL || isLroNACR || isShadowCam) {
+  if (isLroNACL || isLroNACR || isShadowCam || isLUTI) {
     flipFlag = "N";
     if ( (isLroNACL && abs(mounting_angles[2])/deg2rad < 20) ||
          (isLroNACR && abs(mounting_angles[2])/deg2rad > 160) ||
-         (isShadowCam && abs(mounting_angles[2])/deg2rad < 20)) // NOTE: this ShadowCam condition is our best guess; flip to > 160 if we are wrong
+         (isShadowCam && abs(mounting_angles[2])/deg2rad < 20) ||
+         (isLUTI && abs(mounting_angles[2])/deg2rad > 160)  // Unsure yet what the trigger is, best guess is NACR, watch to verify these are flipped
+       ) 
       flipFlag = "Y";
 
     // Generate the ouput pvl file name and open it...

@@ -91,6 +91,7 @@ Group = InstrumentName
   # KPLO 
   #Translation   = (ShadowCamCamera, KPLO_SHADOWCAM)
   Translation   = (ShadowCamCamera, KPLO_SHC)
+  Translation   = (LutiCamera, LUTI)
 
   # LO
   Translation   = (Hrc, "High Resolution Camera")

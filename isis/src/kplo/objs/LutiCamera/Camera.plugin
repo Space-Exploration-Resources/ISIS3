@@ -1,0 +1,18 @@
+Group = KOREA_PATHFINDER_LUNAR_ORBITER/LUTI
+  Version = 2
+  Library = LutiCamera
+  Routine = LutiCameraPlugin
+EndGroup
+
+Group = KOREA_PATHFINDERLUNARORBITER/LUTI
+  Version = 2
+  Library = LutiCamera
+  Routine = LutiCameraPlugin
+EndGroup
+
+Group = KOREAPATHFINDERLUNARORBITER/LUTI
+  Version = 2
+  Library = LutiCamera
+  Routine = LutiCameraPlugin
+EndGroup
+
